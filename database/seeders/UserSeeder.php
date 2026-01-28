@@ -12,8 +12,8 @@ class UserSeeder extends Seeder
     {
         // Créer l'administrateur id 1
         User::create([
-            'nom' => 'Admin',
-            'prenom' => 'System',
+            'nom' => 'Alami',
+            'prenom' => 'Mohamed',
             'email' => 'admin@test.com',
             'password' => bcrypt('data123'),
             'role_id' => 3,
@@ -73,14 +73,64 @@ class UserSeeder extends Seeder
                 'account_status' => 'active'
             ],
             [
-                'nom' => 'Petit',
-                'prenom' => 'Thomas',
+                'nom' => 'Loubna',
+                'prenom' => 'Alami',
                 'email' => 'user3@test.com',
                 'password' => bcrypt('data123'),
                 'role_id' => 1,
                 'is_active' => true,
                 'type' => 'Enseignant',
                 'account_status' => 'active'
+            ],
+            [
+                'nom' => 'Salma',
+                'prenom' => 'Jivan',
+                'email' => 'user4@test.com',
+                'password' => bcrypt('data123'),
+                'role_id' => 1,
+                'is_active' => true,
+                'type' => 'Ingénieur',
+                'account_status' => 'active'
+            ],
+            [
+                'nom' => 'Kamo',
+                'prenom' => 'Alex',
+                'email' => 'user5@test.com',
+                'password' => bcrypt('data123'),
+                'role_id' => 1,
+                'is_active' => true,
+                'type' => 'Doctorant',
+                'account_status' => 'active'
+            ],
+            [
+                'nom' => 'Sallami',
+                'prenom' => 'Ahmed',
+                'email' => 'user6@test.com',
+                'password' => bcrypt('data123'),
+                'role_id' => 1,
+                'is_active' => true,
+                'type' => 'Ingénieur',
+                'account_status' => 'pending'
+            ],
+            [
+                'nom' => 'Alami',
+                'prenom' => 'Fatima',
+                'email' => 'user7@test.com',
+                'password' => bcrypt('data123'),
+                'role_id' => 1,
+                'is_active' => true,
+                'type' => 'Doctorant',
+                'account_status' => 'pending'
+            ],
+            [
+                'nom' => 'Asri',
+                'prenom' => 'khalid',
+                'email' => 'user8@test.com',
+                'password' => bcrypt('data123'),
+                'role_id' => 1,
+                'is_active' => true,
+                'type' => 'Ingénieur',
+                'account_status' => 'pending'
             ]
         ];
 

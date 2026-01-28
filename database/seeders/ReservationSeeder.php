@@ -4,64 +4,45 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Reservation;
-use App\Models\User;
-use App\Models\Resource;
 use Carbon\Carbon;
 
 class ReservationSeeder extends Seeder
 {
     public function run(): void
     {
-        // Réservation approuvée (passée)
-        Reservation::create([
-            'user_id' => 4,
-            'resource_id' => 1, //Serveur HP DL380
-            'date_debut' => Carbon::now()->subDays(10),
-            'date_fin' => Carbon::now()->subDays(7),
-            'justification' => 'Tests de performance pour projet de recherche',
-            'statut' => 'terminée',
-            'commentaire_responsable' => 'Réservation approuvée pour tests',
-            'approuve_par' => 2,
-            'approuve_le' => Carbon::now()->subDays(11)
-        ]);
+        $users = [4, 5, 6];
+        $resourceIds = range(1, 12);
+        $statuses = ['en attente', 'approuvée', 'refusée', 'active', 'terminée'];
+        $justifications = [
+            'Réunion de projet',
+            'Travail en groupe',
+            'Consultation avec le professeur',
+            'Étude individuelle',
+            'Séance de laboratoire',
+            'Réunion administrative',
+            'Réservation pour formation',
+        ];
 
-        // Réservation active (en cours)
-        Reservation::create([
-            'user_id' => 5,
-            'resource_id' => 3, //VM Web Server 01
-            'date_debut' => Carbon::now()->subHours(2),
-            'date_fin' => Carbon::now()->addDays(2),
-            'justification' => 'Développement application web',
-            'statut' => 'active',
-            'commentaire_responsable' => 'OK pour développement',
-            'approuve_par' => 2,
-            'approuve_le' => Carbon::now()->subDays(1)
-        ]);
+        foreach ($users as $userId) {
+            for ($i = 0; $i < 10; $i++) {
+                $resourceId = $resourceIds[array_rand($resourceIds)];
+                $statut = $statuses[array_rand($statuses)];
 
-        // Réservation en attente (future)
-        Reservation::create([
-            'user_id' => 4,
-            'resource_id' => 1,
-            'date_debut' => Carbon::now()->addDays(5),
-            'date_fin' => Carbon::now()->addDays(7),
-            'justification' => 'Analyse de données volumineuses',
-            'statut' => 'en_attente',
-            'commentaire_responsable' => null,
-            'approuve_par' => null,
-            'approuve_le' => null
-        ]);
+                $date_debut = Carbon::now()->subDays(rand(0, 30));
+                $date_fin = (clone $date_debut)->addDays(rand(1, 10));
 
-        // Réservation refusée
-        Reservation::create([
-            'user_id' => 5,
-            'resource_id' => 3,
-            'date_debut' => Carbon::now()->addDays(10),
-            'date_fin' => Carbon::now()->addDays(20),
-            'justification' => 'Projet long terme',
-            'statut' => 'refusée',
-            'commentaire_responsable' => 'Période trop longue, merci de réduire à 7 jours max',
-            'approuve_par' => 3,
-            'approuve_le' => Carbon::now()->subHours(3)
-        ]);
+                Reservation::create([
+                    'user_id' => $userId,
+                    'resource_id' => $resourceId,
+                    'date_debut' => $date_debut,
+                    'date_fin' => $date_fin,
+                    'justification' => $justifications[array_rand($justifications)],
+                    'statut' => $statut,
+                    'commentaire_responsable' => $statut === 'refusée' ? 'Refusée pour test' : null,
+                    'approuve_par' => in_array($statut, ['approuvée', 'active']) ? 1 : null,
+                    'approuve_le' => in_array($statut, ['approuvée', 'active']) ? Carbon::now() : null,
+                ]);
+            }
+        }
     }
 }

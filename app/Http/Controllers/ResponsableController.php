@@ -7,7 +7,9 @@ use App\Models\Reservation;
 use App\Models\Conversation;
 use App\Models\HistoryLog;
 use App\Models\Notification;
+use App\Models\MaintenanceSchedule;
 use Illuminate\Http\Request;
+use App\Models\ReportedMessage;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
@@ -23,45 +25,41 @@ class ResponsableController extends Controller
             ->withCount(['reservations', 'maintenanceSchedules'])
             ->get();
 
-        // Statistiques
-        $stats = [
-            'total_resources' => $managedResources->count(),
-            'pending_reservations' => Reservation::whereHas('resource', function($q) use ($user) {
-                $q->where('responsable_id', $user->id);
-            })->where('statut', 'en_attente')->count(),
-            'active_reservations' => Reservation::whereHas('resource', function($q) use ($user) {
-                $q->where('responsable_id', $user->id);
-            })->where('statut', 'active')->count(),
-            'reported_messages' => Conversation::whereHas('reservation.resource', function($q) use ($user) {
-                $q->where('responsable_id', $user->id);
-            })->where('est_signalé', true)->count(),
-        ];
-
         // Réservations en attente
-        $pendingReservations = Reservation::with(['user', 'resource'])
-            ->whereHas('resource', function($q) use ($user) {
-                $q->where('responsable_id', $user->id);
-            })
-            ->where('statut', 'en_attente')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+        $pendingReservations = Reservation::whereHas('resource', function ($q) {
+            $q->where('responsable_id', auth()->id());
+        })->where('statut', 'en attente')->latest()->take(5)->get();
 
         // Messages signalés
-        $reportedMessages = Conversation::with(['user', 'reservation.resource'])
-            ->whereHas('reservation.resource', function($q) use ($user) {
+        $query = ReportedMessage::with(['user', 'resource'])
+            ->whereHas('resource', function ($q) use ($user) {
                 $q->where('responsable_id', $user->id);
-            })
-            ->where('est_signalé', true)
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+            })->orderBy('created_at', 'desc');
+
+
+        $maintenanceCount = MaintenanceSchedule::whereHas('resource', function ($q) {
+            $q->where('responsable_id', auth()->id());
+        })->where('statut', 'planifiée')->count();
+
+        // Statistiques
+        $stats = [
+            'pending_reservations' => Reservation::whereHas('resource', function ($q) {
+                $q->where('responsable_id', auth()->id());
+            })->where('statut', 'en attente')->count(),
+            'reportedMessagesCount' => $query->count(),
+            'maintenance_count' => $maintenanceCount,
+            'managedResources' => $managedResources->count(),
+        ];
+
+        $reportedMessages = $query->where('est_lu', 0)->take(4)->get();
 
         return view('dashboard.responsable', compact(
             'managedResources',
             'stats',
             'pendingReservations',
-            'reportedMessages'
+            'reportedMessages',
+            'maintenanceCount',
+
         ));
     }
 
@@ -69,9 +67,12 @@ class ResponsableController extends Controller
     public function myResources()
     {
         $resources = Resource::where('responsable_id', Auth::id())
-            ->with(['category', 'reservations' => function($q) {
-                $q->whereIn('statut', ['active', 'approuvée']);
-            }])
+            ->with([
+                'category',
+                'reservations' => function ($q) {
+                    $q->whereIn('statut', ['active', 'approuvée']);
+                }
+            ])
             ->paginate(10);
 
         return view('responsable.resources', compact('resources'));
@@ -81,7 +82,7 @@ class ResponsableController extends Controller
     public function reservations()
     {
         $reservations = Reservation::with(['user', 'resource', 'approbateur'])
-            ->whereHas('resource', function($q) {
+            ->whereHas('resource', function ($q) {
                 $q->where('responsable_id', Auth::id());
             })
             ->orderBy('created_at', 'desc')
@@ -94,14 +95,14 @@ class ResponsableController extends Controller
     public function reportedMessages()
     {
         $messages = Conversation::with(['user', 'reservation.resource'])
-            ->whereHas('reservation.resource', function($q) {
+            ->whereHas('reservation.resource', function ($q) {
                 $q->where('responsable_id', Auth::id());
             })
             ->where('est_signalé', true)
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('responsable.reported-messages', compact('messages'));
+        return view('reports.reported-messages', compact('messages'));
     }
 
     // Désigner un nouveau responsable pour une ressource
@@ -131,7 +132,7 @@ class ResponsableController extends Controller
 
         // Historique
         HistoryLog::create([
-            'action' => 'Transfert responsabilité',
+            'action' => 'modification',
             'table_concernée' => 'resources',
             'user_id' => Auth::id(),
             'description' => 'Transfert de responsabilité pour: ' . $resource->nom,

@@ -11,7 +11,6 @@ return new class extends Migration
         Schema::create('history_logs', function (Blueprint $table) {
             $table->id();
             $table->string('action'); // création, modification, suppression, etc.
-            $table->string('table_concernée');
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->text('description')->nullable();
             $table->json('anciennes_valeurs')->nullable();

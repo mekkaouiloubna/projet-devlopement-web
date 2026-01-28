@@ -40,7 +40,7 @@ class AuthController extends Controller
 
             // Rediriger selon le rôle
             if ($user->isAdmin()) {
-                return redirect()->route('admin.dashboard');
+                return redirect()->route('dashboard.admin');
             } elseif ($user->isResponsable()) {
                 return redirect()->route('responsable.dashboard');
             } else {
@@ -88,8 +88,7 @@ class AuthController extends Controller
 
         // Enregistrer dans l'historique
         HistoryLog::create([
-            'action' => 'Demande d\'inscription',
-            'table_concernée' => 'users',
+            'action' => 'création',
             'user_id' => null, // Pas encore d'utilisateur connecté
             'description' => 'Nouvelle demande d\'inscription de ' . $request->prenom . ' ' . $request->nom,
             'nouvelles_valeurs' => ['email' => $request->email]
@@ -113,18 +112,6 @@ class AuthController extends Controller
     // Déconnexion
     public function logout(Request $request)
     {
-        $user = Auth::user();
-        
-        // Enregistrer dans l'historique
-        if ($user) {
-            HistoryLog::create([
-                'action' => 'Déconnexion',
-                'table_concernée' => 'users',
-                'user_id' => $user->id,
-                'description' => 'Déconnexion du système',
-            ]);
-        }
-
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

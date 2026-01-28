@@ -32,8 +32,7 @@ class ConversationController extends Controller
 
         // Historique
         HistoryLog::create([
-            'action' => 'Message conversation',
-            'table_concernée' => 'conversations',
+            'action' => 'création',
             'user_id' => Auth::id(),
             'description' => 'Nouveau message pour la réservation #' . $reservationId,
             'nouvelles_valeurs' => ['message_preview' => substr($request->message, 0, 50) . '...']
@@ -77,8 +76,7 @@ class ConversationController extends Controller
 
         // Historique
         HistoryLog::create([
-            'action' => 'Message signalé',
-            'table_concernée' => 'conversations',
+            'action' => 'création',
             'user_id' => Auth::id(),
             'description' => 'Message signalé dans la réservation #' . $message->reservation_id,
         ]);
@@ -131,8 +129,7 @@ class ConversationController extends Controller
 
         // Historique
         HistoryLog::create([
-            'action' => 'Suppression message',
-            'table_concernée' => 'conversations',
+            'action' => 'annulation',
             'user_id' => Auth::id(),
             'description' => 'Message supprimé de la réservation #' . $reservation->id,
             'anciennes_valeurs' => $anciennesValeurs

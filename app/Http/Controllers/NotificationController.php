@@ -24,16 +24,18 @@ class NotificationController extends Controller
     }
 
     // Marquer une notification comme lue
-    public function markAsRead($id)
+    public function markAsRead(Notification $notification)
     {
-        $notification = Notification::where('user_id', Auth::id())
-            ->findOrFail($id);
+        if ($notification->user_id !== Auth::id()) {
+            abort(403);
+        }
 
         $notification->est_lu = true;
         $notification->save();
 
-        return response()->json(['success' => true]);
+        return back()-> with('success', 'Notification marquée comme lue.');
     }
+
 
     // Marquer toutes les notifications comme lues
     public function markAllAsRead()
@@ -48,13 +50,17 @@ class NotificationController extends Controller
     // Supprimer une notification
     public function destroy($id)
     {
-        $notification = Notification::where('user_id', Auth::id())
-            ->findOrFail($id);
+        $notification = Notification::findOrFail($id);
+
+        if ($notification->user_id !== Auth::id()) {
+            abort(403);
+        }
 
         $notification->delete();
 
         return back()->with('success', 'Notification supprimée.');
     }
+
 
     // Supprimer toutes les notifications lues
     public function clearRead()
@@ -75,4 +81,16 @@ class NotificationController extends Controller
 
         return response()->json(['count' => $count]);
     }
+
+    // Dernières notifications pour le dropdown
+    public function latestForDropdown()
+    {
+        $notifications = Notification::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return response()->json($notifications);
+    }
+
 }

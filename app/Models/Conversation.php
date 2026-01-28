@@ -12,8 +12,7 @@ class Conversation extends Model
     protected $fillable = [
         'reservation_id',
         'user_id',
-        'message',
-        'est_signalé'
+        'message'
     ];
 
     public function reservation()

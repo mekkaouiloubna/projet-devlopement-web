@@ -35,7 +35,7 @@ class LoginController extends Controller
 
         switch ($roleName) {
             case 'Admin':
-                return route('admin.dashboard');
+                return route('dashboard.admin');
             case 'Responsable Technique':
                 return route('tech.dashboard');
             case 'Utilisateur Interne':

@@ -157,14 +157,14 @@ const ReservationManager = {
             const statusClasses = {
                 'approuvée': 'badge-success',
                 'refusée': 'badge-danger',
-                'en_attente': 'badge-warning',
+                'en attente': 'badge-warning',
                 'active': 'badge-info',
                 'terminée': 'badge-secondary'
             };
             statusElement.className = `badge ${statusClasses[status] || 'badge-secondary'} reservation-status-${reservationId}`;
         }
         
-        if (status !== 'en_attente') {
+        if (status !== 'en attente') {
             document.querySelectorAll(`.reservation-action-${reservationId}`).forEach(btn => {
                 if (btn.classList.contains('btn-approve') || btn.classList.contains('btn-reject')) btn.style.display = 'none';
             });

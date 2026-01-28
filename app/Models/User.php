@@ -75,8 +75,25 @@ class User extends Authenticatable
         return $this->role->nom === 'Responsable';
     }
 
+    public function isAdminOrRespo()
+    {
+        return in_array($this->role->nom, ['Admin', 'Responsable']);
+    }
+
+    public function isAdminOrRespoResource($resource)
+    {
+        return $this->isAdmin() || ($this->isResponsable() && $this->id === $resource->responsable_id);
+    }
+
     public function isUtilisateur()
     {
         return $this->role->nom === 'Utilisateur';
     }
+
+    public function reportedMessages()
+    {
+        return $this->hasMany(ReportedMessage::class);
+    }
+
 }
+

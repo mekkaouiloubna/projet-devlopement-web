@@ -11,7 +11,6 @@ class HistoryLog extends Model
 
     protected $fillable = [
         'action',
-        'table_concernée',
         'user_id',
         'description',
         'anciennes_valeurs',
@@ -23,8 +22,37 @@ class HistoryLog extends Model
         'nouvelles_valeurs' => 'array'
     ];
 
+    public function getAnciennesValeursAttribute($value)
+    {
+        if (is_null($value)) {
+            return null;
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return json_decode($value, true);
+    }
+
+    // Accessor pour nouvelles_valeurs
+    public function getNouvellesValeursAttribute($value)
+    {
+        if (is_null($value)) {
+            return null;
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return json_decode($value, true);
+    }
+
+    // Relation avec l'utilisateur (si pas déjà définie)
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
 }

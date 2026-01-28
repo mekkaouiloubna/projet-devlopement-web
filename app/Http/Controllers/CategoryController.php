@@ -3,103 +3,141 @@
 namespace App\Http\Controllers;
 
 use App\Models\ResourceCategory;
-use App\Models\HistoryLog;
-use App\Models\Notification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\HistoryLog;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    // Afficher toutes les catégories
-    public function index()
+    public function __construct()
     {
-        $categories = ResourceCategory::withCount('resources')->paginate(10);
-        return view('admin.categories', compact('categories'));
+        $this->middleware('auth');
+        $this->middleware('admin');
     }
 
-    // Enregistrer une nouvelle catégorie
+    public function index(Request $request)
+    {
+        $search = $request->get('search');
+
+        $categories = ResourceCategory::withCount('resources')
+            ->when($search, function ($query) use ($search) {
+                $query->where('nom', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            })
+            ->orderBy('created_at', 'desc')
+            ->get(); 
+
+        return view('categories.index', compact('categories', 'search'));
+    }
+
+
+    public function create()
+    {
+        return view('categories.create');
+    }
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'nom' => 'required|string|max:255|unique:resource_categories',
-            'description' => 'nullable|string',
+        $request->validate([
+            'nom' => [
+                'required',
+                'string',
+                'max:100',
+                'unique:resource_categories,nom'
+            ],
+            'description' => 'nullable|string|max:500'
         ]);
 
-        $category = ResourceCategory::create($validated);
-
-        // Historique
-        HistoryLog::create([
-            'action' => 'Création',
-            'table_concernée' => 'resource_categories',
-            'user_id' => Auth::id(),
-            'description' => 'Création de la catégorie: ' . $category->nom,
-            'nouvelles_valeurs' => $category->toArray()
-        ]);
-
-        // Notification aux administrateurs
-        $admins = \App\Models\User::where('role_id', 3)->get();
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'titre' => 'Nouvelle catégorie créée',
-                'message' => 'La catégorie "' . $category->nom . '" a été créée.',
-                'type' => 'système',
-                'est_lu' => false,
+        try {
+            $category = ResourceCategory::create([
+                'nom' => $request->nom,
+                'description' => $request->description
             ]);
+
+            // Log de l'action
+            HistoryLog::create([
+                'action' => 'create_category',
+                'user_id' => auth()->id(),
+                'description' => "Catégorie créée : {$category->nom}",
+                'nouvelles_valeurs' => $category->toArray()
+            ]);
+
+            return redirect()->route('categories.index')
+                ->with('success', 'Catégorie créée avec succès !');
+        } catch (\Exception $e) {
+            return back()->withInput()
+                ->with('error', 'Erreur lors de la création : ' . $e->getMessage());
         }
-
-        return back()->with('success', 'Catégorie créée avec succès.');
     }
 
-    // Mettre à jour une catégorie
-    public function update(Request $request, $id)
+    public function edit(ResourceCategory $category)
     {
-        $category = ResourceCategory::findOrFail($id);
-        
-        $validated = $request->validate([
-            'nom' => 'required|string|max:255|unique:resource_categories,nom,' . $category->id,
-            'description' => 'nullable|string',
-        ]);
-
-        $anciennesValeurs = $category->toArray();
-        $category->update($validated);
-
-        // Historique
-        HistoryLog::create([
-            'action' => 'Modification',
-            'table_concernée' => 'resource_categories',
-            'user_id' => Auth::id(),
-            'description' => 'Modification de la catégorie: ' . $category->nom,
-            'anciennes_valeurs' => $anciennesValeurs,
-            'nouvelles_valeurs' => $category->toArray()
-        ]);
-
-        return back()->with('success', 'Catégorie mise à jour avec succès.');
+        return view('categories.edit', compact('category'));
     }
 
-    // Supprimer une catégorie
-    public function destroy($id)
+    public function update(Request $request, ResourceCategory $category)
     {
-        $category = ResourceCategory::findOrFail($id);
+        $request->validate([
+            'nom' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('resource_categories')->ignore($category->id)
+            ],
+            'description' => 'nullable|string|max:500'
+        ]);
 
-        // Vérifier si la catégorie a des ressources
+        try {
+            $oldData = $category->toArray();
+
+            $category->update([
+                'nom' => $request->nom,
+                'description' => $request->description
+            ]);
+
+            // Log de l'action
+            HistoryLog::create([
+                'action' => 'update_category',
+                'user_id' => auth()->id(),
+                'description' => "Catégorie modifiée : {$category->nom}",
+                'anciennes_valeurs' => $oldData,
+                'nouvelles_valeurs' => $category->toArray()
+            ]);
+
+            return redirect()->route('categories.index')
+                ->with('success', 'Catégorie mise à jour avec succès !');
+        } catch (\Exception $e) {
+            return back()->withInput()
+                ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
+        }
+    }
+
+    public function destroy(ResourceCategory $category)
+    {
+        // Vérifier s'il y a des ressources associées
         if ($category->resources()->count() > 0) {
-            return back()->with('error', 'Impossible de supprimer cette catégorie car elle contient des ressources.');
+            return redirect()->route('categories.index')
+                ->with('error', 'Impossible de supprimer : des ressources sont associées à cette catégorie.');
         }
 
-        $anciennesValeurs = $category->toArray();
-        $nomCategory = $category->nom;
-        $category->delete();
+        try {
+            $categoryName = $category->nom;
 
-        // Historique
-        HistoryLog::create([
-            'action' => 'Suppression',
-            'table_concernée' => 'resource_categories',
-            'user_id' => Auth::id(),
-            'description' => 'Suppression de la catégorie: ' . $nomCategory,
-            'anciennes_valeurs' => $anciennesValeurs
-        ]);
+            // Log avant suppression
+            HistoryLog::create([
+                'action' => 'delete_category',
+                'user_id' => auth()->id(),
+                'description' => "Catégorie supprimée : {$categoryName}",
+                'anciennes_valeurs' => $category->toArray()
+            ]);
 
-        return back()->with('success', 'Catégorie supprimée avec succès.');
+            $category->delete();
+
+            return redirect()->route('categories.index')
+                ->with('success', 'Catégorie supprimée avec succès !');
+        } catch (\Exception $e) {
+            return redirect()->route('categories.index')
+                ->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
+        }
     }
 }

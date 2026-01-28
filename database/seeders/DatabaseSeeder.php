@@ -14,6 +14,11 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             ResourceSeeder::class,
             ReservationSeeder::class,
+            NotificationSeeder::class,
+            MaintenanceScheduleSeeder::class,
+            ReportedMessageSeeder::class,
+            ConversationSeeder::class,
+            HistoryLogsSeeder::class,
         ]);
     }
 }

@@ -71,7 +71,7 @@ class ResourceController extends Controller
     public function create()
     {
         $categories = ResourceCategory::all();
-        $responsables = \App\Models\User::whereIn('role_id', [2, 3])->get(); // Responsables et Admins
+        $responsables = User::all();
 
         return view('resources.create', compact('categories', 'responsables'));
     }
@@ -93,7 +93,7 @@ class ResourceController extends Controller
 
         // Historique
         HistoryLog::create([
-            'action' => 'Création',
+            'action' => 'création',
             'table_concernée' => 'resources',
             'user_id' => Auth::id(),
             'description' => 'Création de la ressource: ' . $resource->nom,
@@ -121,8 +121,10 @@ class ResourceController extends Controller
         $resource = Resource::findOrFail($id);
         $user = auth()->user();
 
-        if (!$user->isAdmin() &&
-            !($user->isResponsable() && $user->id === $resource->responsable_id)) {
+        if (
+            !$user->isAdmin() &&
+            !($user->isResponsable() && $user->id === $resource->responsable_id)
+        ) {
             abort(403, 'Accès non autorisé');
         }
 
@@ -137,9 +139,9 @@ class ResourceController extends Controller
     public function update(Request $request, $id)
     {
         $resource = Resource::findOrFail($id);
-
         $anciennesValeurs = $resource->toArray();
 
+        // Validation des données du formulaire
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'category_id' => 'required|exists:resource_categories,id',
@@ -150,11 +152,26 @@ class ResourceController extends Controller
             'est_actif' => 'boolean',
         ]);
 
+        // Convertir les spécifications du format array au format JSON
+        $specifications = [];
+        if ($request->has('specs')) {
+            foreach ($request->input('specs') as $spec) {
+                if (!empty($spec['key']) && !empty($spec['value'])) {
+                    $specifications[$spec['key']] = $spec['value'];
+                }
+            }
+        }
+
+        // Ajouter les spécifications converties aux données validées
+        $validated['specifications'] = !empty($specifications) ? json_encode($specifications) : null;
+        $validated['est_actif'] = $request->has('est_actif');
+
+        // Mettre à jour la ressource
         $resource->update($validated);
 
-        // Historique
+        // Enregistrer l'action dans l'historique
         HistoryLog::create([
-            'action' => 'Modification',
+            'action' => 'modification',
             'table_concernée' => 'resources',
             'user_id' => Auth::id(),
             'description' => 'Modification de la ressource: ' . $resource->nom,
@@ -162,7 +179,7 @@ class ResourceController extends Controller
             'nouvelles_valeurs' => $resource->toArray()
         ]);
 
-        // Notification si changement de responsable
+        // Notification si le responsable a changé
         if ($resource->wasChanged('responsable_id') && $resource->responsable_id) {
             Notification::create([
                 'user_id' => $resource->responsable_id,
@@ -173,7 +190,8 @@ class ResourceController extends Controller
             ]);
         }
 
-        return redirect()->route('resources.show', $resource->id)
+        // Redirection avec message de succès
+        return redirect()->back()
             ->with('success', 'Ressource mise à jour avec succès.');
     }
 
@@ -183,7 +201,7 @@ class ResourceController extends Controller
         $resource = Resource::findOrFail($id);
 
         // Vérifier si la ressource a des réservations actives
-        if ($resource->reservations()->whereIn('statut', ['active', 'en_attente', 'approuvée'])->exists()) {
+        if ($resource->reservations()->whereIn('statut', ['active', 'en attente', 'approuvée'])->exists()) {
             return back()->with('error', 'Impossible de supprimer cette ressource car elle a des réservations actives.');
         }
 
@@ -193,7 +211,7 @@ class ResourceController extends Controller
 
         // Historique
         HistoryLog::create([
-            'action' => 'Suppression',
+            'action' => 'annulation',
             'table_concernée' => 'resources',
             'user_id' => Auth::id(),
             'description' => 'Suppression de la ressource: ' . $nomResource,

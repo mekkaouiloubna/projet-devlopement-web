@@ -15,7 +15,7 @@ return new class extends Migration
             $table->dateTime('date_debut');
             $table->dateTime('date_fin');
             $table->text('justification');
-            $table->enum('statut', ['en_attente', 'approuvée', 'refusée', 'active', 'terminée'])->default('en_attente');
+            $table->enum('statut', ['en attente', 'approuvée', 'refusée', 'active', 'terminée'])->default('en attente');
             $table->text('commentaire_responsable')->nullable();
             $table->foreignId('approuve_par')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('approuve_le')->nullable();

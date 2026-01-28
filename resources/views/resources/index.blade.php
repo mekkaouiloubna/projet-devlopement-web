@@ -4,134 +4,132 @@
 @section('page-title', 'Ressources disponibles')
 @section('page-icon', 'fas fa-server')
 
-@section('page-actions')
+@section('content')
+    <div class="header-sec" style="margin:60px 0 0 0;">
+        <div class="header-sec-title">
+            <h1>
+                <i class="fas fa-server"></i>
+                Liste des ressources
+            </h1>
+            <p>Parcourir les ressources disponibles et leurs caractéristiques</p>
+        </div>
+        <div class="header-sec-date">
+            <i class="fas fa-calendar-alt"></i>
+            {{ now()->format('d/m/Y') }}
+        </div>
+    </div>
     @auth
-        @if(auth()->user()->isAdmin())
+        <div class="page-actions">@if(auth()->user()->isAdmin())
             <a href="{{ route('resources.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nouvelle ressource
             </a>
         @endif
-    @endauth
-@endsection
-
-@section('content')
-    <!-- Filtres -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5><i class="fas fa-filter"></i> Filtres</h5>
         </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('resources.index') }}" class="filter-form">
-                <div class="row">
-                    <!-- Catégorie -->
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label class="form-label">Catégorie</label>
-                            <select name="category_id" class="form-control">
-                                <option value="">Toutes les catégories</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->nom }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+    @endauth
 
-                    <!-- Statut -->
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label class="form-label">Statut</label>
-                            <select name="statut" class="form-control">
-                                <option value="">Tous les statuts</option>
-                                <option value="disponible" {{ request('statut') == 'disponible' ? 'selected' : '' }}>
-                                    Disponible</option>
-                                <option value="réservé" {{ request('statut') == 'réservé' ? 'selected' : '' }}>Réservé
-                                </option>
-                                <option value="maintenance" {{ request('statut') == 'maintenance' ? 'selected' : '' }}>
-                                    Maintenance</option>
-                                <option value="hors_service" {{ request('statut') == 'hors_service' ? 'selected' : '' }}>Hors
-                                    service</option>
-                            </select>
-                        </div>
-                    </div>
+    <!-- Filtres -->
+    <div class="mt-3 mb-3">
+        <h5><i class="fas fa-filter"></i> Filtres</h5>
+        <form method="GET" action="{{ route('resources.index') }}" class="filtre-col">
+            <!-- Catégorie -->
+            <div class="col-md-3 form-group">
+                <label class="form-label">Catégorie</label>
+                <select name="category_id" class="form-control">
+                    <option value="">Toutes les catégories</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                            {{ $category->nom }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
-                    <!-- Recherche -->
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label class="form-label">Recherche</label>
-                            <input type="text" name="search" class="form-control" placeholder="Nom, description..."
-                                value="{{ request('search') }}">
-                        </div>
-                    </div>
+            <!-- Statut -->
+            <div class="col-md-3 form-group">
+                <label class="form-label">Statut</label>
+                <select name="statut" class="form-control">
+                    <option value="">Tous les statuts</option>
+                    <option value="disponible" {{ request('statut') == 'disponible' ? 'selected' : '' }}>
+                        Disponible</option>
+                    <option value="réservé" {{ request('statut') == 'réservé' ? 'selected' : '' }}>Réservé
+                    </option>
+                    <option value="maintenance" {{ request('statut') == 'maintenance' ? 'selected' : '' }}>
+                        Maintenance</option>
+                    <option value="hors_service" {{ request('statut') == 'hors_service' ? 'selected' : '' }}>Hors
+                        service</option>
+                </select>
+            </div>
 
-                    <!-- Actions -->
-                    <div class="col-md-2 d-flex align-items-end">
-                        <div class="form-group w-100">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-search"></i> Filtrer
-                            </button>
-                        </div>
+            <!-- Recherche -->
+            <div class="col-md-3 form-group">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Nom, description..."
+                    value="{{ request('search') }}">
+            </div>
+
+            <!-- Actions -->
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Filtrer
+            </button>
+
+            @if(request()->hasAny(['category_id', 'statut', 'search']))
+                <a href="{{ route('resources.index') }}" class="btn btn-sm btn-outline">
+                    <i class="fas fa-times"></i> Réinitialiser
+                </a>
+            @endif
+        </form>
+    </div>
+
+    @auth
+        @if(auth()->user()->isAdminOrRespo())
+            <!-- Statistiques -->
+            <div class="stats-grid mb-4">
+                <div class="stat-card success">
+                    <div class="stat-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ $totalResources }}</h3>
+                        <p>Total ressources</p>
                     </div>
                 </div>
 
-                @if(request()->hasAny(['category_id', 'statut', 'search']))
-                    <div class="mt-3">
-                        <a href="{{ route('resources.index') }}" class="btn btn-sm btn-outline">
-                            <i class="fas fa-times"></i> Réinitialiser
-                        </a>
+                <div class="stat-card primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
                     </div>
-                @endif
-            </form>
-        </div>
-    </div>
+                    <div class="stat-content">
+                        <h3>{{ $availableResources }}</h3>
+                        <p>Disponibles</p>
+                    </div>
+                </div>
 
-    <!-- Statistiques -->
-    <div class="stats-grid mb-4">
-        <div class="stat-item">
-            <div class="stat-icon">
-                <i class="fas fa-server"></i>
-            </div>
-            <div class="stat-content">
-                <h3>{{ $totalResources }}</h3>
-                <p>Total ressources</p>
-            </div>
-        </div>
+                <div class="stat-card info">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ $reservedResources }}</h3>
+                        <p>Réservées</p>
+                    </div>
+                </div>
 
-        <div class="stat-item">
-            <div class="stat-icon" style="color: var(--success-color);">
-                <i class="fas fa-check-circle"></i>
+                <div class="stat-card warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ $maintenanceResources }}</h3>
+                        <p>En maintenance</p>
+                    </div>
+                </div>
             </div>
-            <div class="stat-content">
-                <h3>{{ $availableResources }}</h3>
-                <p>Disponibles</p>
-            </div>
-        </div>
-
-        <div class="stat-item">
-            <div class="stat-icon" style="color: var(--warning-color);">
-                <i class="fas fa-calendar-alt"></i>
-            </div>
-            <div class="stat-content">
-                <h3>{{ $reservedResources }}</h3>
-                <p>Réservées</p>
-            </div>
-        </div>
-
-        <div class="stat-item">
-            <div class="stat-icon" style="color: var(--info-color);">
-                <i class="fas fa-tools"></i>
-            </div>
-            <div class="stat-content">
-                <h3>{{ $maintenanceResources }}</h3>
-                <p>En maintenance</p>
-            </div>
-        </div>
-    </div>
+        @endif
+    @endauth
 
     <!-- Liste des ressources -->
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header">
             <h5><i class="fas fa-list"></i> Liste des ressources</h5>
             <div class="text-muted">
                 {{ $resources->total() }} ressource(s) trouvée(s)
@@ -140,7 +138,7 @@
 
         <div class="card-body">
             @if($resources->count() > 0)
-                <div class="resources-grid">
+                <div class="element-grid">
                     @foreach($resources as $resource)
                         <div class="resource-card">
                             <div class="resource-header">
@@ -195,27 +193,34 @@
                             </div>
 
                             <div class="resource-actions">
-                                <a href="{{ route('resources.show', $resource->id) }}" class="btn btn-outline btn-sm">
-                                    <i class="fas fa-eye"></i> Détails
-                                </a>
+                                 <a href="{{ route('resources.show', $resource->id) }}" class="btn btn-sm btn-primary"
+                                            title="Voir">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
 
                                 @auth
-                                    @if( $resource->isDisponible() &&
-                                            (auth()->user()->isUtilisateur() ||
-                                                (auth()->user()->isResponsable() &&
-                                                    !(auth()->id() === $resource->responsable_id))
-                                            )
-                                        )
+                                    @if($resource->isDisponible() && (auth()->user()->isUtilisateur()))
                                         <a href="{{ route('reservations.create', ['resource_id' => $resource->id]) }}"
                                             class="btn btn-primary btn-sm">
                                             <i class="fas fa-calendar-plus"></i> Réserver
                                         </a>
                                     @endif
-
-                                    @if(auth()->user()->isAdmin() || (auth()->user()->isResponsable() && auth()->user()->id === $resource->responsable_id))
-                                        <a href="{{ route('resources.edit', $resource->id) }}" class="btn btn-sm btn-outline">
+                                    @if(auth()->user()->isAdminOrRespoResource($resource))
+                                        <!-- Modifier -->
+                                        <a href="{{ route('resources.edit', $resource->id) }}" class="btn btn-sm btn-warning"
+                                            title="Modifier">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <!-- Supprimer -->
+                                        <form action="{{ route('resources.destroy', $resource->id) }}" method="POST"
+                                            class="d-inline"
+                                            onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette ressource ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
                                     @endif
                                 @endauth
                             </div>
@@ -240,52 +245,17 @@
     </div>
 
     <style>
-        .filter-form .row {
-            align-items: flex-end;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-item {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 20px;
+        .filtre-col {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-radius: var(--radius-sm);
+            padding: 15px;
+            background: #ffffff;
             box-shadow: var(--shadow-sm);
-            display: flex;
-            align-items: center;
-            gap: 15px;
         }
 
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: var(--secondary-color);
-        }
-
-        .stat-content h3 {
-            font-size: 1.8rem;
-            margin: 0;
-            color: var(--primary-color);
-        }
-
-        .stat-content p {
-            margin: 5px 0 0;
-            color: var(--gray-color);
-            font-size: 0.9rem;
-        }
-
-        .resources-grid {
+        .element-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
@@ -294,13 +264,13 @@
         .resource-card {
             background: white;
             border: 1.5px solid #000000;
-            border-radius: var(--border-radius);
+            border-radius: var(--radius-sm);
             padding: 20px;
             transition: var(--transition);
         }
 
         .resource-card:hover {
-            border-color: var(--secondary-color);
+            border-color: var(--sec-color);
             box-shadow: var(--shadow-md);
         }
 
@@ -321,7 +291,7 @@
 
         .resource-title {
             font-size: 1.2rem;
-            color: var(--primary-color);
+            color: var(--prim-color);
             margin-bottom: 10px;
             display: flex;
             align-items: center;
@@ -367,26 +337,6 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-        }
-
-        @media (max-width: 768px) {
-            .resources-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .filter-form .col-md-2 {
-                margin-top: 10px;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 @endsection

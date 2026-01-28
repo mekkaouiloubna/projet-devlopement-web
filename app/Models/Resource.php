@@ -48,4 +48,10 @@ class Resource extends Model
     {
         return $this->statut === 'disponible' && $this->est_actif;
     }
+
+    public function reportedMessages()
+    {
+        return $this->hasMany(ReportedMessage::class);
+    }
+
 }
